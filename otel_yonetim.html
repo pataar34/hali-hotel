@@ -11821,9 +11821,17 @@ let _fbSaveTimer = null, _fbUnsubscribe = null;
 
 async function initFirebase() {
   try {
+    // Önce localStorage'dan dene, yoksa gömülü config kullan
     const cfgRaw = localStorage.getItem('hms_firebase_config');
-    if (!cfgRaw) return;
-    const cfg = JSON.parse(cfgRaw);
+    const cfg = cfgRaw ? JSON.parse(cfgRaw) : {
+      apiKey: "AIzaSyD6zjmDp4IxfcPXd7yL5ru7huk16DT9Hgg",
+      authDomain: "hotel-hali.firebaseapp.com",
+      databaseURL: "https://hotel-hali-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "hotel-hali",
+      storageBucket: "hotel-hali.firebasestorage.app",
+      messagingSenderId: "1298945884",
+      appId: "1:1298945884:web:9f8e716cac1ba98e1d9399"
+    };
     if (!cfg.databaseURL) return;
     const { initializeApp, getDatabase, ref, get, onValue, set } = window.__firebaseModules || {};
     if (!initializeApp) { console.warn('Firebase modules not loaded yet'); return; }
