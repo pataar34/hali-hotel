@@ -1270,6 +1270,11 @@
             <option value="cancelled">İptal</option>
             <option value="noshow">No Show</option>
           </select>
+          <select id="res-filter-tip" onchange="renderReservationsTable()">
+            <option value="">Tümü</option>
+            <option value="single">👤 Münferit</option>
+            <option value="group">👥 Toplu</option>
+          </select>
           <select id="res-filter-building" onchange="renderReservationsTable()">
             <option value="">Tüm Binalar</option>
             <option value="eski">Eski Bina</option>
@@ -2348,6 +2353,7 @@
             <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
             <button class="btn btn-secondary" onclick="window.print()">🖨 Yazdır</button>
             <button class="btn btn-danger" onclick="clearAllData()">🗑 Tüm Verileri Sil</button>
+            <button class="btn btn-secondary" onclick="tumFiyatlariSifirla()">💰 Tüm Fiyatları Sıfırla</button>
           </div>
         </div>
         <div class="card mt-16">
@@ -5212,15 +5218,17 @@ function renderReservationsTable() {
   const statusFilter = document.getElementById('res-filter-status')?.value || '';
   const buildingFilter = document.getElementById('res-filter-building')?.value || '';
   const tarihFilter = document.getElementById('res-filter-tarih')?.value || '';
+  const tipFilter = document.getElementById('res-filter-tip')?.value || '';
 
   if (typeof window._resPage === 'undefined') window._resPage = 0;
   let data = [...visibleReservations()].sort((a,b) => b.createdAt - a.createdAt);
-  // Varsayılan olarak check-in ve check-out olanları gizle
   if (!statusFilter) data = data.filter(r => r.status !== 'checkedin' && r.status !== 'checkedout');
   if (search) data = data.filter(r => r.guestName.toLowerCase().includes(search) || r.room.includes(search) || r.resNo.toLowerCase().includes(search));
   if (statusFilter) data = data.filter(r => r.status === statusFilter);
   if (buildingFilter) data = data.filter(r => getBuilding(r.room) === buildingFilter);
   if (tarihFilter) data = data.filter(r => r.checkin === tarihFilter);
+  if (tipFilter === 'single') data = data.filter(r => !r.groupId && r.resMode !== 'group');
+  if (tipFilter === 'group') data = data.filter(r => r.groupId || r.resMode === 'group');
 
   const tbody = document.getElementById('reservations-tbody');
   if (!tbody) return;
@@ -13502,6 +13510,17 @@ function odaSifirla(roomNo) {
   renderRooms();
   document.getElementById('room-quickview')?.remove();
   showToast(`${roomNo} nolu oda sıfırlandı`, 'success');
+}
+
+function tumFiyatlariSifirla() {
+  if (!confirm('Tüm rezervasyonların günlük oda fiyatları temizlenecek! Emin misiniz?')) return;
+  reservations.forEach(r => {
+    r.price = '';
+    r.total = 0;
+    r.manualPrice = false;
+  });
+  save();
+  showToast('Tüm günlük fiyatlar temizlendi!', 'success');
 }
 
 // saveUserWithHash kaldırıldı
