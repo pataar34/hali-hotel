@@ -7012,12 +7012,12 @@ async function _showFilePickerScreen() {
       if (idbData && idbData.hms_reservations) {
         applyData(idbData);
         _updateFileIndicator();
-        return; // Otomatik yüklendi, dosya seçme ekranı gösterme
+        return;
       }
     } catch(e) {}
   }
 
-  // IndexedDB'de veri yoksa localStorage'a bak
+  // localStorage'a bak
   try {
     const lsRes = localStorage.getItem('hms_reservations');
     if (lsRes) {
@@ -7035,85 +7035,14 @@ async function _showFilePickerScreen() {
       if (data.hms_reservations) {
         applyData(data);
         _updateFileIndicator();
-        return; // Otomatik yüklendi
+        return;
       }
     }
   } catch(e) {}
 
-  // Hiç veri yoksa dosya seçim ekranı göster
-  const screen = document.createElement('div');
-  screen.id = 'file-picker-screen';
-  screen.style.cssText = 'position:fixed;inset:0;background:linear-gradient(135deg,#1e2433 0%,#2d3748 100%);z-index:99999;display:flex;align-items:center;justify-content:center;';
-  screen.innerHTML = `
-    <div style="background:#1e2433;border:1px solid #3d4a6a;border-radius:16px;padding:48px 40px;width:400px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-      <div style="font-size:48px;margin-bottom:16px;">🏨</div>
-      <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;">HALI HOTEL</div>
-      <div style="font-size:13px;color:#94a3b8;margin-bottom:40px;">Yönetim Sistemi</div>
-      <button id="fsa-open-btn" style="width:100%;padding:14px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:12px;">
-        📂 Veri Dosyasını Aç
-      </button>
-      <button id="fsa-skip-btn" style="width:100%;padding:12px;background:transparent;color:#94a3b8;border:1px solid #3d4a6a;border-radius:10px;font-size:13px;cursor:pointer;">
-        Yeni Başlangıç (Veri Yok)
-      </button>
-      <div style="margin-top:20px;font-size:11px;color:#4a5568;line-height:1.6;">
-        Boş bir <b style="color:#7c3aed">hali_hotel_data.json</b> dosyası oluşturup seçebilirsiniz.<br>
-        İçine sadece <b style="color:#94a3b8">{}</b> yazmanız yeterli.
-      </div>
-    </div>`;
-  document.body.appendChild(screen);
-
-  return new Promise(resolve => {
-    document.getElementById('fsa-open-btn').onclick = async () => {
-      try {
-        const [handle] = await window.showOpenFilePicker({
-          types: [{ description: 'JSON Veri Dosyası', accept: { 'application/json': ['.json'] } }],
-          multiple: false
-        });
-        _fsaFileHandle = handle;
-        const data = await _fsaReadFile(handle);
-        if (data && Object.keys(data).length > 0) {
-          await initIDB();
-          if (data.hms_reservations || data.hms_rooms) {
-            applyData(data);
-          } else if (Object.keys(data).filter(k => !k.startsWith('_')).length === 0) {
-            await initIDB(); await load();
-          } else {
-            const mapped = {};
-            if (data.reservations) mapped.hms_reservations = data.reservations;
-            if (data.rooms) mapped.hms_rooms = data.rooms;
-            if (data.guests) mapped.hms_guests = data.guests;
-            if (data.finance) mapped.hms_finance = data.finance;
-            if (data.settings) mapped.hms_settings = data.settings;
-            if (data.systemUsers) mapped.hms_users = data.systemUsers;
-            if (data.maintenance) mapped.hms_maintenance = data.maintenance;
-            if (data.charges) mapped.hms_charges = data.charges;
-            if (data.complaints) mapped.hms_complaints = data.complaints;
-            if (data.parking) mapped.hms_parking = data.parking;
-            if (data.safe) mapped.hms_safe = data.safe;
-            if (data.cashier) mapped.hms_cashier = data.cashier;
-            if (data.invoices) mapped.hms_invoices = data.invoices;
-            if (data.deposits) mapped.hms_deposits = data.deposits;
-            if (data.staff) mapped.hms_staff = data.staff;
-            if (data.shifts) mapped.hms_shifts = data.shifts;
-            if (data.seasons) mapped.hms_seasons = data.seasons;
-            if (data.auditLog) mapped.hms_audit = data.auditLog;
-            if (data.notifications) mapped.hms_notifications = data.notifications;
-            if (Object.keys(mapped).length > 0) applyData(mapped);
-          }
-        }
-        _updateFileIndicator();
-        screen.remove();
-        resolve();
-      } catch(e) {
-        if (e.name !== 'AbortError') showToast('Dosya açılamadı: ' + e.message, 'error');
-      }
-    };
-
-    document.getElementById('fsa-skip-btn').onclick = () => {
-      screen.remove();
-      resolve();
-    };
-  });
+  // Hiç veri yoksa Firebase'den yükle
+  // Direkt devam et - Firebase init başlatılacak
+  _updateFileIndicator();
 }
 
 function _showServerStatus() {
@@ -7306,7 +7235,7 @@ function renderRoomAssign() {
   // Filter reservations needing assignment (confirmed, around this date)
   let pending = visibleReservations().filter(r =>
     (r.status === 'confirmed') &&
-    r.checkin <= dateVal && r.checkout > dateVal
+    r.checkin === dateVal
   );
   if (statusFilter === 'unassigned') pending = pending.filter(r => !r.room);
   else if (statusFilter === 'assigned') pending = pending.filter(r => !!r.room);
