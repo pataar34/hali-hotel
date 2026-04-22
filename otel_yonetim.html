@@ -1018,9 +1018,12 @@
         <div class="nav-item active" onclick="showPage('dashboard')"><span class="icon">🏠</span><span>Gösterge Paneli</span></div>
         <div class="nav-item" onclick="showPage('rooms')"><span class="icon">🛏</span><span>Oda Durumu</span></div>
         <div class="nav-item" onclick="showPage('reservations')"><span class="icon">📅</span><span>Rezervasyonlar</span><span class="nav-badge" id="res-badge">0</span></div>
+        <div class="nav-item" onclick="showPage('room-assign')"><span class="icon">🗝</span><span>Oda Atama</span></div>
+        <div class="nav-item" onclick="showPage('blacklist')"><span class="icon">🚫</span><span>Kara Liste</span></div>
         <div class="nav-item" onclick="showPage('oda-dagilim')"><span class="icon">🏷️</span><span>Oda Dağılım</span></div>
         <div class="nav-item" onclick="showPage('res-search')"><span class="icon">🔍</span><span>Rezervasyon Ara</span></div>
-        <div class="nav-item" onclick="showPage('room-assign')"><span class="icon">🗝</span><span>Oda Atama</span></div>
+        <div class="nav-item" onclick="showPage('guests')"><span class="icon">👥</span><span>Old Guest</span></div>
+        <div class="nav-item" onclick="showPage('room-change')"><span class="icon">🔄</span><span>R/C Oda Değişikliği</span></div>
         <div class="nav-item" onclick="showPage('occupancy-cal')"><span class="icon">📆</span><span>Doluluk Takvimi</span></div>
         <div class="nav-item" onclick="showPage('checkin')"><span class="icon">✅</span><span>Giriş / Çıkış</span></div>
         <div class="nav-item" onclick="showPage('cin-cout-rapor')"><span class="icon">📋</span><span>C/IN - C/OUT</span></div>
@@ -1034,7 +1037,7 @@
         <div class="nav-section-title">Operasyon</div>
         <div class="nav-item" onclick="showPage('housekeeping')"><span class="icon">🧹</span><span>Housekeeping</span></div>
         <div class="nav-item" onclick="showPage('folio')"><span class="icon">💳</span><span>Hesap / Folio</span></div>
-        <div class="nav-item" onclick="showPage('guests')"><span class="icon">👥</span><span>Misafirler</span></div>
+        
         <div class="nav-item" onclick="showPage('maintenance')"><span class="icon">🔧</span><span>Bakım / Arıza</span></div>
         <div class="nav-item" onclick="showPage('complaints')"><span class="icon">📢</span><span>Şikayet / Talep</span></div>
         <div class="nav-item" onclick="showPage('parking')"><span class="icon">🚗</span><span>Otopark</span></div>
@@ -1253,6 +1256,38 @@
 
         <!-- İçerik -->
         <div id="od-icerik"></div>
+      </div>
+
+      <!-- ===== KARA LİSTE ===== -->
+      <div class="page" id="page-blacklist">
+        <div class="section-header">
+          <div class="section-title">🚫 Kara Liste</div>
+          <button class="btn btn-danger" onclick="openBlacklistModal()">+ Kara Listeye Ekle</button>
+        </div>
+
+        <!-- Arama -->
+        <div style="margin-bottom:16px;">
+          <input type="text" id="bl-search" placeholder="🔍 Ad, TC, pasaport veya neden ara..." oninput="renderBlacklist()"
+            style="width:100%;max-width:400px;padding:9px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;">
+        </div>
+
+        <!-- Tablo -->
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>AD SOYAD</th>
+                <th>TC / PASAPORT</th>
+                <th>UYRUK</th>
+                <th>NEDEN</th>
+                <th>EKLENME TARİHİ</th>
+                <th>EKLEYEN</th>
+                <th>İŞLEM</th>
+              </tr>
+            </thead>
+            <tbody id="blacklist-tbody"></tbody>
+          </table>
+        </div>
       </div>
 
       <div class="page" id="page-reservations">
@@ -1915,47 +1950,50 @@
         <div class="section-header">
           <div class="section-title">İstatistikler</div>
           <div class="filter-bar" style="margin:0;gap:8px;">
-            <select id="stat-month" onchange="renderStats()">
-              <option value="01">Ocak</option>
-              <option value="02">Şubat</option>
-              <option value="03">Mart</option>
-              <option value="04">Nisan</option>
-              <option value="05">Mayıs</option>
-              <option value="06">Haziran</option>
-              <option value="07">Temmuz</option>
-              <option value="08">Ağustos</option>
-              <option value="09">Eylül</option>
-              <option value="10">Ekim</option>
-              <option value="11">Kasım</option>
-              <option value="12">Aralık</option>
-            </select>
-            <select id="stat-year" onchange="renderStats()">
-              <option value="2020">2020</option>
-              <option value="2021">2021</option>
-              <option value="2022">2022</option>
-              <option value="2023">2023</option>
-              <option value="2024">2024</option>
-              <option value="2025">2025</option>
-              <option value="2026"selected>2026</option>
-              <option value="2027">2027</option>
-              <option value="2028">2028</option>
-              <option value="2029">2029</option>
-              <option value="2030">2030</option>
-              <option value="2031">2031</option>
-              <option value="2032">2032</option>
-              <option value="2033">2033</option>
-              <option value="2034">2034</option>
-              <option value="2035">2035</option>
-              <option value="2036">2036</option>
-              <option value="2037">2037</option>
-              <option value="2038">2038</option>
-              <option value="2039">2039</option>
-              <option value="2040">2040</option>
-            </select>
             <select id="stat-view" onchange="renderStats()">
+              <option value="tarih">📅 Tarih Aralığı</option>
               <option value="monthly">Aylık Görünüm</option>
               <option value="yearly">Yıllık Görünüm</option>
             </select>
+            <!-- Tarih aralığı -->
+            <div id="stat-tarih-wrap" style="display:flex;gap:6px;align-items:center;">
+              <input type="date" id="stat-bas" onblur="renderStats()"
+                style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;">
+              <span style="color:var(--text3);font-size:12px;">—</span>
+              <input type="date" id="stat-bit" onblur="renderStats()"
+                style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;">
+              <button class="btn btn-primary btn-sm" onclick="renderStats()">🔍 Filtrele</button>
+              <button class="btn btn-secondary btn-sm" onclick="
+                const mn=new Date(today()); mn.setDate(1);
+                const mx=new Date(mn.getFullYear(),mn.getMonth()+1,0);
+                document.getElementById('stat-bas').value=mn.toISOString().split('T')[0];
+                document.getElementById('stat-bit').value=mx.toISOString().split('T')[0];
+                renderStats();">Bu Ay</button>
+            </div>
+            <!-- Ay/Yıl seçici -->
+            <div id="stat-ayil-wrap" style="display:none;gap:6px;">
+              <select id="stat-month" onchange="renderStats()">
+                <option value="01">Ocak</option>
+                <option value="02">Şubat</option>
+                <option value="03">Mart</option>
+                <option value="04">Nisan</option>
+                <option value="05">Mayıs</option>
+                <option value="06">Haziran</option>
+                <option value="07">Temmuz</option>
+                <option value="08">Ağustos</option>
+                <option value="09">Eylül</option>
+                <option value="10">Ekim</option>
+                <option value="11">Kasım</option>
+                <option value="12">Aralık</option>
+              </select>
+              <select id="stat-year" onchange="renderStats()">
+                <option value="2024">2024</option>
+                <option value="2025">2025</option>
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="comparison-grid" id="stats-comparison"></div>
@@ -2412,6 +2450,44 @@
       </div>
 
       <!-- ===== ODA ATAMA ===== -->
+      <!-- ===== R/C ODA DEĞİŞİKLİĞİ ===== -->
+      <div class="page" id="page-room-change">
+        <div class="section-header">
+          <div class="section-title">🔄 R/C — Oda Değişikliği</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+          <!-- Sol: Misafir Seç -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;">
+            <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:14px;">1. Misafiri Seç (Check-in Yapılmış)</div>
+            <div id="rc-inhouse-list" style="display:flex;flex-direction:column;gap:8px;max-height:500px;overflow-y:auto;"></div>
+          </div>
+
+          <!-- Sağ: Yeni Oda Seç -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:20px;">
+            <div style="font-size:13px;font-weight:700;color:var(--gold);margin-bottom:14px;">2. Yeni Oda Seç</div>
+            <div id="rc-selected-info" style="display:none;background:var(--surface3);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;font-size:13px;"></div>
+            <div class="form-group">
+              <label>Yeni Oda</label>
+              <select id="rc-new-room" style="width:100%;">
+                <option value="">— Oda Seçin —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Değişiklik Nedeni</label>
+              <input type="text" id="rc-reason" placeholder="Örn: Müşteri isteği, teknik arıza..." style="width:100%;">
+            </div>
+            <button class="btn btn-primary" onclick="doRoomChange()" style="width:100%;margin-top:8px;">🔄 Oda Değişikliğini Uygula</button>
+          </div>
+        </div>
+
+        <!-- Geçmiş -->
+        <div style="margin-top:24px;">
+          <div style="font-size:13px;font-weight:700;color:var(--text2);margin-bottom:12px;">📋 R/C Geçmişi</div>
+          <div id="rc-history-list"></div>
+        </div>
+      </div>
+
       <div class="page" id="page-room-assign">
         <div class="section-header">
           <div class="section-title">Oda Atama</div>
@@ -3863,7 +3939,9 @@ function getAllData() {
     hms_payroll: payrollRecords, hms_pdks: pdksRecords, hms_crm_leads: crmLeads,
     hms_banket: banketProjects, hms_night_audit: nightAuditHistory,
     hms_audit: auditLog.slice(0, 1000), hms_extras: extras,
-    hms_arizali: arizaliOdalar
+    hms_arizali: arizaliOdalar,
+    hms_rc_history: rcHistory,
+    hms_blacklist: blacklist
   };
 }
 
@@ -3904,6 +3982,8 @@ function applyData(data) {
   if (data.hms_night_audit) nightAuditHistory = data.hms_night_audit;
   if (data.hms_audit) auditLog = data.hms_audit;
   if (data.hms_arizali) arizaliOdalar = data.hms_arizali;
+  if (data.hms_rc_history) rcHistory = data.hms_rc_history;
+  if (data.hms_blacklist) blacklist = data.hms_blacklist;
   if (data.hms_extras) {
     const d = data.hms_extras;
     if (d.waitlist) waitlistItems = d.waitlist;
@@ -4302,6 +4382,8 @@ function showPage(id) {
   }
   if (id === 'rooms') renderRooms();
   if (id === 'reservations') renderReservationsTable();
+  if (id === 'blacklist') { renderBlacklist(); }
+  if (id === 'room-change') { rcSelectedResId = null; renderRoomChange(); }
   if (id === 'checkin') { renderCheckin(); }
   if (id === 'oda-dagilim') {
     const t = today();
@@ -5101,6 +5183,12 @@ function saveReservation() {
   const nights = diffDays(ci, co);
   if (nights <= 0) { showToast('Çıkış tarihi giriş tarihinden sonra olmalı!', 'error'); return; }
 
+  // Kara liste kontrolü
+  const blMatch = checkBlacklist(gn, gi);
+  if (blMatch) {
+    if (!confirm(`⛔ DİKKAT! "${gn}" kara listede!\nNeden: ${blMatch.reason}\n\nYine de rezervasyon oluşturulsun mu?`)) return;
+  }
+
   // Çakışma kontrolü
   // Oda no'yu al - single modda res-room-select, group modda birden fazla oda
   let roomNo = '';
@@ -5249,12 +5337,15 @@ function renderReservationsTable() {
     <td>
       <div style="display:flex;gap:4px;flex-wrap:wrap;">
         ${r.status==='confirmed'?`<button class="btn btn-success btn-sm" onclick="doCheckIn('${r.id}')">✓ Giriş</button>`:''}
+        ${r.status==='confirmed'?`<button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="doNoShow('${r.id}')" title="No Show">NS</button>`:''}
         ${r.status==='checkedin'?`<button class="btn btn-danger btn-sm" onclick="doCheckOut('${r.id}')">✓ Çıkış</button>`:''}
+        ${r.status==='noshow'?`<span class="badge badge-orange" style="font-size:11px;">No Show</span>`:''}
         ${r.visibility!=='public'?`<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;" onclick="makePublic('${r.id}')" title="Public'e taşı">◈</button>`:`<button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;" onclick="makeInternal('${r.id}')" title="Internal'e al">⬡</button>`}
         ${r.visibility!=='public'?`<button style="background:#0ea5e9;color:#fff;border:none;border-radius:var(--radius-sm);padding:3px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="makePublic('${r.id}')" title="Public'e taşı">◈</button>`:`<button style="background:#7c3aed;color:#fff;border:none;border-radius:var(--radius-sm);padding:3px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="makeInternal('${r.id}')" title="Internal'e al">⬡</button>`}
         <button class="btn btn-secondary btn-sm" onclick="editReservation('${r.id}')">✏</button>
         <button class="btn btn-danger btn-sm" onclick="cancelReservation('${r.id}')" title="İptal Et">✕</button>
-        ${(r.status==='cancelled'||r.status==='no-show')?`<button class="btn btn-danger btn-sm" onclick="deleteReservation('${r.id}')" title="Kalıcı Sil">🗑</button>`:''} 
+        <button class="btn btn-sm" style="background:#1f2937;color:#ef4444;border:1px solid #ef4444;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="addResToBlacklist('${r.id}')" title="Kara Listeye Ekle">🚫 KL</button>
+        ${(r.status==='cancelled'||r.status==='noshow')?`<button class="btn btn-danger btn-sm" onclick="deleteReservation('${r.id}')" title="Kalıcı Sil">🗑</button>`:''}
         <button class="btn btn-sm" style="background:#25d366;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 8px;cursor:pointer;font-size:11px;" onclick="showWaMenu('${r.id}')" title="WhatsApp">📱</button>
         <button class="btn btn-sm" style="background:#25d366;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 8px;cursor:pointer;font-size:11px;" onclick="showWaMenu('${r.id}')" title="WhatsApp Mesajı Gönder">📱 WA</button>
       </div>
@@ -5500,6 +5591,7 @@ function _doCheckInActual(id) {
 
   r.status = 'checkedin';
   r.checkinActual = today();
+  r.checkinTime = new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'});
   if (!roomStatus[roomNo]) roomStatus[roomNo] = {};
   roomStatus[roomNo].status = 'occupied';
   roomStatus[roomNo].guestName = r.guestName;
@@ -5675,7 +5767,10 @@ function renderCheckin() {
       }).join('');
   }
   // In-house
-  const inhouse = visibleReservations().filter(r => r.status === 'checkedin');
+  const inhouse = visibleReservations().filter(r => 
+    (r.status === 'checkedin') ||
+    (r.status === 'confirmed' && r.checkin <= todayStr && r.checkout > todayStr)
+  );
   const itbody = document.getElementById('inhouse-tbody');
   if (itbody) {
     itbody.innerHTML = inhouse.length === 0 ?
@@ -5687,7 +5782,7 @@ function renderCheckin() {
           <td class="text-gold">${r.room}</td>
           <td><span class="badge ${getBuilding(r.room)==='eski'?'badge-blue':'badge-green'}">${getBuilding(r.room)==='eski'?'Eski':'Yeni'}</span></td>
           <td><b>${escapeHtml(r.guestName)}</b></td>
-          <td>${fmt(r.checkin)}</td><td>${fmt(r.checkout)}</td>
+          <td>${fmt(r.checkin)}${r.checkinTime ? `<br><span style="font-size:11px;color:var(--green);">⏰ ${r.checkinTime}</span>` : ''}</td><td>${fmt(r.checkout)}</td>
           <td><span class="${remaining<=1?'text-red':'text-gold'}">${remaining} gece</span></td>
           <td>${fmtTL(r.total+extra)}</td>
           <td>
@@ -5992,7 +6087,11 @@ function loadFolio() {
     document.getElementById('folio-content').innerHTML = '<div class="empty-state"><div class="es-icon">💳</div><div class="es-text">Oda seçin</div></div>';
     return;
   }
-  const res = reservations.find(r => r.room === room && (r.status === 'checkedin' || r.status === 'checkedout'));
+  const todayStr = today();
+  const res = 
+    reservations.find(r => r.room === room && r.status === 'checkedin' && r.checkin <= todayStr && r.checkout > todayStr) ||
+    reservations.find(r => r.room === room && r.status === 'confirmed' && r.checkin <= todayStr && r.checkout > todayStr) ||
+    reservations.filter(r => r.room === room && r.status === 'checkedout').sort((a,b) => b.checkout.localeCompare(a.checkout))[0];
   const roomCharges = charges[room] || [];
   const extraTotal = roomCharges.reduce((s, ch) => s + ch.amount, 0);
   const baseTotal = res?.total || 0;
@@ -6936,6 +7035,12 @@ async function init() {
   
   // Sayfa kapanmadan önce kaydet
   window.addEventListener('beforeunload', () => { clearTimeout(_saveTimer); _doSave(); });
+
+  // Otomatik PUBLIC moda geçiş — 1 dakika hareketsizlikte
+  ['click','keydown','touchstart'].forEach(ev => {
+    document.addEventListener(ev, () => resetViewModeTimer(), { passive: true });
+  });
+  resetViewModeTimer();
   populateMeetingRoomSelect();
   checkBirthdays();
   checkOptionDeadlines();
@@ -7703,32 +7808,53 @@ function renderOccupancyCal() {
 // =====================
 function renderStats() {
   const now = new Date();
+  const view = document.getElementById('stat-view')?.value || 'tarih';
+
+  // Görünüm değişince ilgili filtreyi göster/gizle
+  const tarihWrap = document.getElementById('stat-tarih-wrap');
+  const ayilWrap = document.getElementById('stat-ayil-wrap');
+  if (tarihWrap) tarihWrap.style.display = view === 'tarih' ? 'flex' : 'none';
+  if (ayilWrap) ayilWrap.style.display = view !== 'tarih' ? 'flex' : 'none';
+
   const selMonth = parseInt(document.getElementById('stat-month')?.value || (now.getMonth()+1));
   const selYear = parseInt(document.getElementById('stat-year')?.value || now.getFullYear());
-  const view = document.getElementById('stat-view')?.value || 'monthly';
+
+  // Tarih aralığı
+  const basTarih = document.getElementById('stat-bas')?.value;
+  const bitTarih = document.getElementById('stat-bit')?.value;
 
   const eskiRooms = ROOMS_DATA.filter(r => r.bina === 'eski');
   const yeniRooms = ROOMS_DATA.filter(r => r.bina === 'yeni');
   const eskiNums = eskiRooms.map(r => r.num);
   const yeniNums = yeniRooms.map(r => r.num);
 
-  // Seçilen döneme göre rezervasyon filtresi
+  // Dönem başlangıç ve bitiş tarihleri
+  const donemBas = view === 'tarih' ? basTarih
+    : view === 'yearly' ? `${selYear}-01-01`
+    : `${selYear}-${String(selMonth).padStart(2,'0')}-01`;
+  const donemBit = view === 'tarih' ? bitTarih
+    : view === 'yearly' ? `${selYear}-12-31`
+    : new Date(selYear, selMonth, 0).toISOString().split('T')[0];
+
+  // Seçilen döneme göre rezervasyon filtresi — dönemde aktif olanlar
   function inPeriod(r) {
-    if (!r.checkin) return false;
-    const d = new Date(r.checkin);
-    if (view === 'yearly') return d.getFullYear() === selYear;
-    return d.getFullYear() === selYear && (d.getMonth()+1) === selMonth;
+    if (!r.checkin || !r.checkout) return false;
+    if (view === 'tarih' && (!basTarih || !bitTarih)) return false;
+    // Rezervasyon dönemle kesişiyor mu?
+    return r.checkin <= donemBit && r.checkout > donemBas;
   }
 
   const periodRes = visibleReservations().filter(r => inPeriod(r));
   const periodIncome = financeRecords.filter(f => {
     if (f.type !== 'income' || !f.date) return false;
+    if (view === 'tarih') return basTarih && bitTarih && f.date >= basTarih && f.date <= bitTarih;
     const d = new Date(f.date);
     if (view === 'yearly') return d.getFullYear() === selYear;
     return d.getFullYear() === selYear && (d.getMonth()+1) === selMonth;
   });
   const periodExpense = financeRecords.filter(f => {
     if (f.type !== 'expense' || !f.date) return false;
+    if (view === 'tarih') return basTarih && bitTarih && f.date >= basTarih && f.date <= bitTarih;
     const d = new Date(f.date);
     if (view === 'yearly') return d.getFullYear() === selYear;
     return d.getFullYear() === selYear && (d.getMonth()+1) === selMonth;
@@ -7756,12 +7882,8 @@ function renderStats() {
     const cancelled = cancelledRecs.length;
 
     // Doluluk: seçili dönemdeki her gün için dolu oda say, ortalamasını al
-    const donemBaslangic = view === 'yearly'
-      ? `${selYear}-01-01`
-      : `${selYear}-${String(selMonth).padStart(2,'0')}-01`;
-    const donemBitis = view === 'yearly'
-      ? `${selYear}-12-31`
-      : new Date(selYear, selMonth, 0).toISOString().split('T')[0];
+    const donemBaslangic = donemBas || today();
+    const donemBitis = donemBit || today();
     const todayStr = today();
     const gunSayisi = diffDays(donemBaslangic, donemBitis) + 1;
     let toplamDoluGun = 0;
@@ -7797,7 +7919,10 @@ function renderStats() {
   const total = calcPeriodStats(allNums, allNums);
 
   const monthNames = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
-  const periodLabel = view === 'yearly' ? `${selYear} Yılı` : `${monthNames[selMonth]} ${selYear}`;
+  const periodLabel = view === 'tarih'
+    ? (basTarih && bitTarih ? `${fmt(basTarih)} — ${fmt(bitTarih)}` : 'Tarih Seçin')
+    : view === 'yearly' ? `${selYear} Yılı`
+    : `${monthNames[selMonth]} ${selYear}`;
 
   const comp = document.getElementById('stats-comparison');
   comp.innerHTML = `
@@ -8014,9 +8139,17 @@ async function doLogin() {
 }
 
 let _viewModeTimer = null;
-const VIEW_MODE_TIMEOUT = 5 * 60 * 1000; // 5 dakika
+const VIEW_MODE_TIMEOUT = 60 * 1000; // 1 dakika
 
-function resetViewModeTimer() {}
+function resetViewModeTimer() {
+  if (_viewModeTimer) clearTimeout(_viewModeTimer);
+  _viewModeTimer = setTimeout(() => {
+    if (viewMode === 'internal') {
+      setViewMode('public');
+      showToast('1 dakika hareketsizlik — PUBLIC moda geçildi', 'info');
+    }
+  }, VIEW_MODE_TIMEOUT);
+}
 
 function resetSessionTimer() {
   if (_sessionTimer) clearTimeout(_sessionTimer);
@@ -13450,6 +13583,340 @@ function tumFiyatlariSifirla() {
   });
   save();
   showToast('Tüm günlük fiyatlar temizlendi!', 'success');
+}
+
+// ─── R/C ODA DEĞİŞİKLİĞİ ─────────────────────────────────────────────────
+let rcSelectedResId = null;
+let rcHistory = [];
+
+function renderRoomChange() {
+  const todayStr = today();
+
+  // Check-in yapılmış misafirleri listele
+  const inhouse = reservations.filter(r =>
+    r.status === 'checkedin' &&
+    r.checkin <= todayStr && r.checkout > todayStr
+  );
+
+  const list = document.getElementById('rc-inhouse-list');
+  if (list) {
+    if (inhouse.length === 0) {
+      list.innerHTML = `<div class="empty-state"><div class="es-icon">🏨</div><div class="es-text">Şu an check-in yapılmış misafir yok</div></div>`;
+    } else {
+      list.innerHTML = inhouse.map(r => `
+        <div onclick="rcSelectRes('${r.id}')" id="rc-card-${r.id}"
+          style="background:var(--surface);border:2px solid ${rcSelectedResId===r.id?'var(--gold)':'var(--border)'};border-radius:var(--radius-sm);padding:12px;cursor:pointer;transition:border-color 0.2s;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div>
+              <div style="font-weight:700;font-size:14px;">${escapeHtml(r.guestName)}</div>
+              <div style="font-size:12px;color:var(--text3);margin-top:2px;">Oda: <b style="color:var(--gold)">${r.room}</b> · ${fmt(r.checkin)} → ${fmt(r.checkout)}</div>
+              <div style="font-size:11px;color:var(--text3);">${roomTypeLabel(r.type)} · ${r.pax||1} kişi</div>
+            </div>
+            <span class="badge badge-green" style="font-size:11px;">✓ C/IN</span>
+          </div>
+        </div>`).join('');
+    }
+  }
+
+  // R/C Geçmişi
+  renderRcHistory();
+}
+
+function rcSelectRes(id) {
+  rcSelectedResId = id;
+  const r = reservations.find(x => x.id === id);
+  if (!r) return;
+
+  // Seçili bilgiyi göster
+  const info = document.getElementById('rc-selected-info');
+  if (info) {
+    info.style.display = 'block';
+    info.innerHTML = `
+      <div style="font-weight:700;color:var(--gold);">${escapeHtml(r.guestName)}</div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;">
+        Mevcut Oda: <b style="color:var(--red)">${r.room}</b> · 
+        ${fmt(r.checkin)} → ${fmt(r.checkout)} · ${r.nights} gece
+      </div>`;
+  }
+
+  // Müsait odaları listele (aynı tip, dolu olmayanlar)
+  const todayStr = today();
+  const sel = document.getElementById('rc-new-room');
+  if (sel) {
+    sel.innerHTML = '<option value="">— Oda Seçin —</option>' +
+      ROOMS_DATA.filter(room => {
+        if (room.num === r.room) return false; // Mevcut oda
+        if (roomStatus[room.num]?.status === 'maintenance') return false;
+        // Çakışma kontrolü
+        const cakisan = reservations.some(res =>
+          res.id !== id &&
+          String(res.room) === String(room.num) &&
+          res.status !== 'cancelled' && res.status !== 'checkedout' &&
+          res.checkin < r.checkout && res.checkout > r.checkin
+        );
+        return !cakisan;
+      }).map(room => {
+        const bina = room.bina === 'eski' ? 'Eski' : 'Yeni';
+        const ayniTip = room.type === r.type ? ' ⭐ Aynı Tip' : '';
+        return `<option value="${room.num}">${room.num} — ${bina} Bina ${room.kat} (${roomTypeLabel(room.type)})${ayniTip}</option>`;
+      }).join('');
+  }
+
+  // Kartları yenile
+  renderRoomChange();
+}
+
+function doRoomChange() {
+  if (!rcSelectedResId) { showToast('Önce misafir seçin!', 'error'); return; }
+  const newRoom = document.getElementById('rc-new-room')?.value;
+  const reason = document.getElementById('rc-reason')?.value || '';
+  if (!newRoom) { showToast('Yeni oda seçin!', 'error'); return; }
+
+  const r = reservations.find(x => x.id === rcSelectedResId);
+  if (!r) return;
+
+  const eskiOda = r.room;
+
+  if (!confirm(`${r.guestName} misafiri ${eskiOda} → ${newRoom} odasına taşınsın mı?`)) return;
+
+  // Eski odayı boşalt
+  if (roomStatus[eskiOda]) {
+    roomStatus[eskiOda].status = 'available';
+    roomStatus[eskiOda].guestName = '';
+    roomStatus[eskiOda].hkStatus = 'dirty';
+  }
+
+  // Yeni odayı doldur
+  if (!roomStatus[newRoom]) roomStatus[newRoom] = {};
+  roomStatus[newRoom].status = 'occupied';
+  roomStatus[newRoom].guestName = r.guestName;
+  roomStatus[newRoom].checkoutDate = r.checkout;
+
+  // Rezervasyonu güncelle
+  r.room = newRoom;
+  r.rcHistory = r.rcHistory || [];
+  r.rcHistory.push({
+    tarih: today(),
+    saat: new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'}),
+    eskiOda, yeniOda: newRoom, reason,
+    yapan: 'Cengiz'
+  });
+
+  // Genel R/C geçmişine ekle
+  rcHistory.unshift({
+    id: uid(), tarih: today(),
+    saat: new Date().toLocaleTimeString('tr-TR', {hour:'2-digit', minute:'2-digit'}),
+    misafir: r.guestName, eskiOda, yeniOda: newRoom, reason, resNo: r.resNo
+  });
+
+  // Temizle
+  rcSelectedResId = null;
+  if (document.getElementById('rc-new-room')) document.getElementById('rc-new-room').value = '';
+  if (document.getElementById('rc-reason')) document.getElementById('rc-reason').value = '';
+  if (document.getElementById('rc-selected-info')) document.getElementById('rc-selected-info').style.display = 'none';
+
+  save();
+  renderRoomChange();
+  renderRooms();
+  showToast(`${r.guestName} → Oda ${newRoom} taşındı!`, 'success');
+  addNotification('Oda Değişikliği', `${r.guestName}: ${eskiOda} → ${newRoom}`, '🔄');
+}
+
+function renderRcHistory() {
+  const el = document.getElementById('rc-history-list');
+  if (!el) return;
+  if (rcHistory.length === 0) {
+    el.innerHTML = `<div style="font-size:13px;color:var(--text3);text-align:center;padding:16px;">Henüz oda değişikliği yapılmadı</div>`;
+    return;
+  }
+  el.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="background:var(--surface2);">
+      <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--text3);">TARİH/SAAT</th>
+      <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--text3);">MİSAFİR</th>
+      <th style="padding:8px 12px;text-align:center;font-size:12px;color:var(--text3);">ESKİ ODA</th>
+      <th style="padding:8px 12px;text-align:center;font-size:12px;color:var(--text3);">→</th>
+      <th style="padding:8px 12px;text-align:center;font-size:12px;color:var(--text3);">YENİ ODA</th>
+      <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--text3);">NEDEN</th>
+    </tr></thead>
+    <tbody>
+      ${rcHistory.slice(0,50).map(h => `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:8px 12px;font-size:12px;color:var(--text3);">${fmt(h.tarih)} ${h.saat}</td>
+        <td style="padding:8px 12px;font-size:13px;font-weight:600;">${escapeHtml(h.misafir)}</td>
+        <td style="padding:8px 12px;text-align:center;"><span class="badge badge-red">${h.eskiOda}</span></td>
+        <td style="padding:8px 12px;text-align:center;color:var(--gold);">→</td>
+        <td style="padding:8px 12px;text-align:center;"><span class="badge badge-green">${h.yeniOda}</span></td>
+        <td style="padding:8px 12px;font-size:12px;color:var(--text3);">${h.reason||'—'}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function doNoShow(id) {
+  const r = reservations.find(x => x.id === id);
+  if (!r) return;
+  if (!confirm(`${r.guestName} — No Show olarak işaretlensin mi?`)) return;
+  r.status = 'noshow';
+  r.noShowDate = today();
+  // Odayı boşalt
+  const roomNo = r.room || r.roomNo || '';
+  if (roomNo && roomStatus[roomNo]) {
+    roomStatus[roomNo].status = 'available';
+    roomStatus[roomNo].guestName = '';
+    roomStatus[roomNo].hkStatus = 'clean';
+  }
+  save();
+  renderReservationsTable();
+  renderRooms();
+  showToast(`${r.guestName} No Show olarak işaretlendi`, 'warning');
+  addNotification('No Show', `${r.guestName} — Oda ${roomNo}`, '🚫');
+}
+
+// ─── KARA LİSTE ──────────────────────────────────────────────────────────
+let blacklist = [];
+
+function renderBlacklist() {
+  const search = (document.getElementById('bl-search')?.value || '').toLowerCase();
+  let data = [...blacklist];
+  if (search) data = data.filter(b =>
+    (b.name||'').toLowerCase().includes(search) ||
+    (b.idNum||'').toLowerCase().includes(search) ||
+    (b.reason||'').toLowerCase().includes(search)
+  );
+
+  const tbody = document.getElementById('blacklist-tbody');
+  if (!tbody) return;
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state"><div class="es-icon">🚫</div><div class="es-text">Kara listede kimse yok</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(b => `<tr>
+    <td><b style="color:var(--red);">⛔ ${escapeHtml(b.name)}</b></td>
+    <td style="font-family:monospace;">${escapeHtml(b.idNum||'—')}</td>
+    <td>${escapeHtml(b.nationality||'—')}</td>
+    <td style="color:var(--text2);">${escapeHtml(b.reason||'—')}</td>
+    <td style="font-size:12px;color:var(--text3);">${fmt(b.date)}</td>
+    <td style="font-size:12px;color:var(--text3);">${escapeHtml(b.addedBy||'—')}</td>
+    <td>
+      <button class="btn btn-danger btn-sm" onclick="removeFromBlacklist('${b.id}')">🗑 Sil</button>
+    </td>
+  </tr>`).join('');
+}
+
+function openBlacklistModal() {
+  const existing = document.getElementById('modal-blacklist-add');
+  if (existing) existing.remove();
+  const overlay = document.createElement('div');
+  overlay.id = 'modal-blacklist-add';
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.innerHTML = `<div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div class="modal-title">🚫 Kara Listeye Ekle</div>
+      <button class="modal-close" onclick="document.getElementById('modal-blacklist-add').remove()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Ad Soyad *</label>
+        <input type="text" id="bl-name" placeholder="Ad Soyad" style="width:100%;">
+      </div>
+      <div class="form-group">
+        <label>TC / Pasaport No</label>
+        <input type="text" id="bl-idnum" placeholder="TC veya Pasaport No" style="width:100%;">
+      </div>
+      <div class="form-group">
+        <label>Uyruk</label>
+        <input type="text" id="bl-nationality" placeholder="Ülke" style="width:100%;">
+      </div>
+      <div class="form-group">
+        <label>Kara Listeye Alma Nedeni *</label>
+        <textarea id="bl-reason" rows="3" placeholder="Neden kara listeye alındı?" style="width:100%;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="document.getElementById('modal-blacklist-add').remove()">İptal</button>
+      <button class="btn btn-danger" onclick="addToBlacklist()">🚫 Kara Listeye Ekle</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove(); });
+}
+
+function addToBlacklist() {
+  const name = document.getElementById('bl-name')?.value?.trim();
+  const idNum = document.getElementById('bl-idnum')?.value?.trim();
+  const nationality = document.getElementById('bl-nationality')?.value?.trim();
+  const reason = document.getElementById('bl-reason')?.value?.trim();
+
+  if (!name) { showToast('Ad Soyad zorunlu!', 'error'); return; }
+  if (!reason) { showToast('Neden zorunlu!', 'error'); return; }
+
+  blacklist.push({
+    id: uid(), name, idNum, nationality, reason,
+    date: today(), addedBy: 'Cengiz'
+  });
+
+  document.getElementById('modal-blacklist-add')?.remove();
+  save();
+  renderBlacklist();
+  showToast(`${name} kara listeye eklendi`, 'error');
+}
+
+function removeFromBlacklist(id) {
+  const b = blacklist.find(x => x.id === id);
+  if (!b) return;
+  if (!confirm(`${b.name} kara listeden çıkarılsın mı?`)) return;
+  blacklist = blacklist.filter(x => x.id !== id);
+  save();
+  renderBlacklist();
+  showToast('Kara listeden çıkarıldı', 'success');
+}
+
+function checkBlacklist(name, idNum) {
+  // Rezervasyon girerken kara liste kontrolü
+  const nameMatch = blacklist.find(b => b.name.toLowerCase() === (name||'').toLowerCase());
+  const idMatch = idNum ? blacklist.find(b => b.idNum && b.idNum === idNum) : null;
+  return nameMatch || idMatch || null;
+}
+
+function addResToBlacklist(id) {
+  const r = reservations.find(x => x.id === id);
+  if (!r) return;
+
+  // Zaten kara listede mi?
+  const zatenVar = blacklist.find(b => b.name.toLowerCase() === r.guestName.toLowerCase());
+  if (zatenVar) { showToast(`${r.guestName} zaten kara listede!`, 'warning'); return; }
+
+  const reason = prompt(`${r.guestName} kara listeye eklenecek.\nNeden girin:`);
+  if (!reason) return;
+
+  blacklist.push({
+    id: uid(),
+    name: r.guestName,
+    idNum: r.guestId || '',
+    nationality: r.guestNationality || '',
+    reason,
+    date: today(),
+    addedBy: 'Cengiz',
+    resNo: r.resNo
+  });
+
+  // Rezervasyonu da iptal et
+  r.status = 'cancelled';
+  r.cancelReason = 'Kara listeye alındı: ' + reason;
+
+  // Odayı boşalt
+  const roomNo = r.room || r.roomNo || '';
+  if (roomNo && roomStatus[roomNo]) {
+    roomStatus[roomNo].status = 'available';
+    roomStatus[roomNo].guestName = '';
+  }
+
+  save();
+  renderReservationsTable();
+  renderRooms();
+  showToast(`${r.guestName} kara listeye eklendi ve rezervasyon iptal edildi! 🚫`, 'error');
 }
 
 // saveUserWithHash kaldırıldı
