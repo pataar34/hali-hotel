@@ -4693,19 +4693,20 @@ function renderRooms() {
           );
 
           // Checkout olan odayı kirli say
-          const checkedoutBugün = reservations.find(res =>
+          const _visRes = visibleReservations();
+          const checkedoutBugün = _visRes.find(res =>
             String(res.room||res.roomNo||'') === String(r.num) &&
             res.status === 'checkedout' &&
             res.checkout === seciliTarih
           );
 
           let status;
-          const checkedinRes = reservations.find(res =>
+          const checkedinRes = _visRes.find(res =>
             String(res.room||res.roomNo||'') === String(r.num) &&
             res.status === 'checkedin' &&
             res.checkin <= seciliTarih && res.checkout > seciliTarih
           );
-          const confirmedRes = reservations.find(res =>
+          const confirmedRes = _visRes.find(res =>
             String(res.room||res.roomNo||'') === String(r.num) &&
             res.status === 'confirmed' &&
             res.checkin <= seciliTarih && res.checkout > seciliTarih
@@ -4740,12 +4741,12 @@ function renderRooms() {
           const upcoming = visibleReservations().filter(res => (res.room||res.roomNo) === r.num && res.status === 'confirmed' && res.checkin >= seciliTarih).sort((a,b)=>a.checkin.localeCompare(b.checkin))[0];
           const upcomingBadge = upcoming ? `<div style="position:absolute;top:-4px;right:-4px;background:var(--blue);color:#fff;font-size:9px;border-radius:4px;padding:1px 3px;">📅</div>` : '';
           // Misafir adını önce aktif rezervasyondan, sonra roomStatus'tan al
-          const aktifMisafir = reservations.find(res =>
+          const aktifMisafir = visibleReservations().find(res =>
             (res.room||res.roomNo) === r.num &&
             (res.status === 'checkedin' || res.status === 'confirmed') &&
             res.checkin <= seciliTarih && res.checkout > seciliTarih
           );
-          const guestName = aktifMisafir?.guestName || st.guestName || '';
+          const guestName = aktifMisafir?.guestName || (viewMode === 'internal' ? st.guestName : '') || '';
           const guestInfo = guestName ? `<div style="font-size:13px;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;opacity:0.85;font-weight:600;">${guestName.split(' ')[0]}</div>` : '';
           return `<div onclick="showRoomQuickView('${r.num}')" title="${r.num} — ${statusLabel[status]||status}${st.guestName?' ('+st.guestName+')':''}"
             style="position:relative;width:128px;height:104px;background:${bgColor};border:2px solid ${borderColor};border-radius:8px;cursor:pointer;
@@ -5340,6 +5341,8 @@ function renderReservationsTable() {
         ${r.status==='confirmed'?`<button class="btn btn-sm" style="background:#f59e0b;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="doNoShow('${r.id}')" title="No Show">NS</button>`:''}
         ${r.status==='checkedin'?`<button class="btn btn-danger btn-sm" onclick="doCheckOut('${r.id}')">✓ Çıkış</button>`:''}
         ${r.status==='noshow'?`<span class="badge badge-orange" style="font-size:11px;">No Show</span>`:''}
+        ${r.status==='cancelled'?`<button class="btn btn-sm" style="background:#10b981;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="revertCancellation('${r.id}')" title="Geri Al">↩ Geri Al</button>`:''}
+        ${r.status==='noshow'?`<button class="btn btn-sm" style="background:#10b981;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="revertCancellation('${r.id}')" title="Geri Al">↩ Geri Al</button>`:''}
         ${r.visibility!=='public'?`<button class="btn btn-sm" style="background:#0ea5e9;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;" onclick="makePublic('${r.id}')" title="Public'e taşı">◈</button>`:`<button class="btn btn-sm" style="background:#7c3aed;color:#fff;border:none;border-radius:var(--radius-sm);padding:4px 7px;cursor:pointer;font-size:11px;" onclick="makeInternal('${r.id}')" title="Internal'e al">⬡</button>`}
         ${r.visibility!=='public'?`<button style="background:#0ea5e9;color:#fff;border:none;border-radius:var(--radius-sm);padding:3px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="makePublic('${r.id}')" title="Public'e taşı">◈</button>`:`<button style="background:#7c3aed;color:#fff;border:none;border-radius:var(--radius-sm);padding:3px 7px;cursor:pointer;font-size:11px;font-weight:700;" onclick="makeInternal('${r.id}')" title="Internal'e al">⬡</button>`}
         <button class="btn btn-secondary btn-sm" onclick="editReservation('${r.id}')">✏</button>
@@ -6385,6 +6388,7 @@ function renderGuestsTable() {
     <td>${g.stays||0}</td>
     <td>${g.lastStay?fmt(g.lastStay):'—'}</td>
     <td><div style="display:flex;gap:3px;">
+      <button class="btn btn-primary btn-xs" onclick="newResFromGuest('${g.id}')" title="Rezervasyon Oluştur">📅 Rez</button>
       <button class="btn btn-secondary btn-xs" onclick="editGuest('${g.id}')">✏</button>
           <button class="btn btn-xs" style="background:#25d366;color:#fff;border:none;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:11px;" onclick="waBirthday('${g.id}')" title="Doğum Günü WhatsApp">🎂</button>
       <button class="btn btn-xs ${g.vip?'btn-gold':'btn-secondary'}" onclick="toggleVip('${g.id}')">${g.vip?'★':'☆'} VIP</button>
@@ -13440,7 +13444,7 @@ function renderOdaDagilim() {
   const gunVeriler = gunler.map(g => {
     const tipSayilari = {};
     TIPLER.forEach(t => {
-      tipSayilari[t.key] = reservations.filter(r =>
+      tipSayilari[t.key] = visibleReservations().filter(r =>
         r.type === t.key &&
         r.status !== 'cancelled' && r.status !== 'noshow' &&
         r.checkin <= g && r.checkout > g
@@ -13917,6 +13921,51 @@ function addResToBlacklist(id) {
   renderReservationsTable();
   renderRooms();
   showToast(`${r.guestName} kara listeye eklendi ve rezervasyon iptal edildi! 🚫`, 'error');
+}
+
+function newResFromGuest(id) {
+  const g = guests.find(x => x.id === id);
+  if (!g) return;
+
+  // Kara liste kontrolü
+  if (g.blacklist) {
+    showToast(`⛔ ${g.name} kara listede! Rezervasyon oluşturulamaz.`, 'error');
+    return;
+  }
+
+  // Rezervasyon formunu aç ve misafir bilgilerini doldur
+  openNewReservation();
+  setTimeout(() => {
+    const nameEl = document.getElementById('res-guest-name');
+    const idEl = document.getElementById('res-guest-id');
+    const phoneEl = document.getElementById('res-guest-phone');
+    const emailEl = document.getElementById('res-guest-email');
+    const natEl = document.getElementById('res-guest-nationality');
+
+    if (nameEl) nameEl.value = g.name || '';
+    if (idEl) idEl.value = g.idNum || '';
+    if (phoneEl) phoneEl.value = g.phone || '';
+    if (emailEl) emailEl.value = g.email || '';
+    if (natEl) natEl.value = g.nationality || '';
+
+    // Uyruk alanını güncelle
+    if (g.nationality) setTimeout(() => initCountryField('res-guest-nationality', g.nationality), 100);
+
+    showToast(`${g.name} bilgileri forma yüklendi!`, 'success');
+  }, 300);
+}
+
+function revertCancellation(id) {
+  const r = reservations.find(x => x.id === id);
+  if (!r) return;
+  if (!confirm(`${r.guestName} rezervasyonu geri alınsın mı? Durum "Onaylı" olacak.`)) return;
+  r.status = 'confirmed';
+  r.cancelReason = '';
+  r.noShowDate = '';
+  save();
+  renderReservationsTable();
+  renderRooms();
+  showToast(`${r.guestName} rezervasyonu geri alındı! ✅`, 'success');
 }
 
 // saveUserWithHash kaldırıldı
