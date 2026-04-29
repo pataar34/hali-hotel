@@ -4566,7 +4566,8 @@ function renderDashboard() {
     r.visibility === 'public' &&
     r.status !== 'cancelled' && r.status !== 'noshow' && r.status !== 'checkedout' &&
     (r.status === 'checkedin' || r.status === 'confirmed') &&
-    r.checkin <= gercekTarih && r.checkout > todayStr
+    r.checkin <= todayStr && r.checkout > todayStr &&
+    (r.room || r.roomNo)
   ).length;
 
   const bosOdaInternal = totalRooms - toplamDolu;
