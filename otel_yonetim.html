@@ -3079,7 +3079,7 @@
 
 <!-- Guest Modal -->
 <div class="modal-overlay" id="modal-guest">
-  <div class="modal">
+  <div class="modal" style="max-width:600px;">
     <div class="modal-header">
       <div class="modal-title">Misafir Kaydı</div>
       <div class="modal-close" onclick="closeModal('modal-guest')">×</div>
@@ -3094,6 +3094,15 @@
         <div class="form-group"><label>Doğum Tarihi</label><input id="g-dob" type="date"></div>
         <div class="form-group full"><label>Adres</label><input id="g-address"></div>
         <div class="form-group full"><label>Notlar</label><textarea id="g-notes"></textarea></div>
+      </div>
+
+      <!-- Grup Üyeleri -->
+      <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-size:13px;font-weight:700;color:var(--gold);">👥 Grup Üyeleri</div>
+          <button class="btn btn-secondary btn-sm" onclick="guestAddMember()" type="button">+ Üye Ekle</button>
+        </div>
+        <div id="g-members-list"></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -4215,15 +4224,26 @@ function load() {
 // =====================
 function today() {
   const now = new Date();
-  // Otelcilik mantığı: gece 00:00-05:59 arası hâlâ önceki günün tarihi
-  if (now.getHours() < 6) {
-    const dn = new Date(now);
-    dn.setDate(dn.getDate() - 1);
-    return dn.toISOString().split('T')[0];
+  const gercekTarih = now.toISOString().split('T')[0];
+  
+  try {
+    const lastAuditDate = localStorage.getItem('hms_last_audit_date');
+    if (lastAuditDate) {
+      // lastAuditDate = gün sonunun yapıldığı ertesi gün
+      // Gerçek tarih bu değere ulaştıysa onu döndür
+      if (gercekTarih >= lastAuditDate) return lastAuditDate;
+      // Henüz o güne gelmedik — bir önceki günü döndür
+      const dn = new Date(lastAuditDate);
+      dn.setDate(dn.getDate() - 1);
+      return dn.toISOString().split('T')[0];
+    }
+    // localStorage yoksa gerçek tarihi döndür
+    return gercekTarih;
+  } catch(e) {
+    return gercekTarih;
   }
-  return now.toISOString().split('T')[0];
 }
-const todayStr = today;
+function todayStr() { return today(); }
 
 function fmt(d) {
   if (!d) return '—';
@@ -4553,11 +4573,11 @@ function renderDashboard() {
   // Gerçek takvim tarihi (gece modundan bağımsız)
   const gercekTarih = new Date().toISOString().split('T')[0];
 
-  // Dolu oda = bugün checkedin olanlar + bugün/yarın giriş yapan confirmed olanlar
+  // Dolu oda = bugün checkedin olanlar + bugün giriş yapan confirmed olanlar
   const toplamDolu = reservations.filter(r =>
     r.status !== 'cancelled' && r.status !== 'noshow' && r.status !== 'checkedout' &&
     (r.status === 'checkedin' || r.status === 'confirmed') &&
-    r.checkin <= gercekTarih && r.checkout > todayStr &&
+    r.checkin <= todayStr && r.checkout > todayStr &&
     (r.room || r.roomNo)
   ).length;
 
@@ -5459,7 +5479,8 @@ function doCheckIn(id) {
   // Kaç kişi var?
   const pax = parseInt(r.pax) || 1;
   // Mevcut misafir listesi var mı?
-  const existingGuests = r.guestList || [];
+  const existingGuests = r.guestList || window._pendingGuestList || [];
+  window._pendingGuestList = null;
   _openCheckinGuestModal(r, pax, existingGuests, () => _doCheckInActual(id));
 }
 
@@ -5603,20 +5624,34 @@ function _doCheckInActual(id) {
   roomStatus[roomNo].hkStatus = 'clean';
 
   // Misafir listesindeki her kişiyi guests dizisine ekle/güncelle
-  const guestList = r.guestList || [{ name: r.guestName, idNum: r.guestId||'', nationality: r.guestNationality||'', address:'' }];
+  const guestList = r.guestList && r.guestList.length > 0 
+    ? r.guestList 
+    : [{ name: r.guestName, idNum: r.guestId||'', nationality: r.guestNationality||'', dob:'', address:'' }];
+  
   guestList.forEach((gl, idx) => {
-    let g = guests.find(x => x.idNum && x.idNum === gl.idNum);
+    if (!gl.name) return; // boş kayıt atlansın
+    // TC/Pasaport ile bul, yoksa isimle bul
+    let g = (gl.idNum ? guests.find(x => x.idNum && x.idNum === gl.idNum) : null)
+            || guests.find(x => x.name.toLowerCase() === gl.name.toLowerCase());
     if (!g) {
-      g = { id:uid(), name:gl.name, idNum:gl.idNum||'', phone: idx===0 ? (r.guestPhone||'') : '',
-            email: idx===0 ? (r.guestEmail||'') : '', nationality:gl.nationality||'',
-            dob:gl.dob||'', address:gl.address||'', stays:0, lastStay:'' };
+      g = { 
+        id:uid(), name:gl.name, idNum:gl.idNum||'', 
+        phone: idx===0 ? (r.guestPhone||'') : '',
+        email: idx===0 ? (r.guestEmail||'') : '', 
+        nationality:gl.nationality||'',
+        dob:gl.dob||'', address:gl.address||'', 
+        stays:0, lastStay:'', vip:false, blacklist:false, createdAt:Date.now()
+      };
       guests.push(g);
     } else {
       if (gl.nationality) g.nationality = gl.nationality;
       if (gl.dob) g.dob = gl.dob;
       if (gl.address) g.address = gl.address;
+      if (gl.idNum) g.idNum = gl.idNum;
     }
-    if (idx === 0) { g.stays = (g.stays||0)+1; g.lastStay = today(); }
+    // Tüm misafirlerin stays ve lastStay güncelle
+    g.stays = (g.stays||0) + 1;
+    g.lastStay = today();
   });
 
   if (charges[roomNo] && charges[roomNo].length > 0) charges[roomNo] = [];
@@ -6330,9 +6365,19 @@ function saveGuest() {
   const name = document.getElementById('g-name').value.trim();
   const idNum = document.getElementById('g-id').value.trim();
   if (!name || !idNum) { showToast('Ad ve TC/Pasaport zorunlu!', 'error'); return; }
+
+  // Grup üyelerini topla
+  const members = [];
+  document.querySelectorAll('#g-members-list > div').forEach(div => {
+    const mName = div.querySelector('.gm-name')?.value?.trim();
+    const mId = div.querySelector('.gm-id')?.value?.trim();
+    const mDob = div.querySelector('.gm-dob')?.value;
+    const mNat = div.querySelector('.gm-nat')?.value?.trim();
+    if (mName) members.push({ name: mName, idNum: mId||'', dob: mDob||'', nationality: mNat||'' });
+  });
+
   const editId = window._editingGuestId;
   if (editId) {
-    // Edit mode
     const g = guests.find(x => x.id === editId);
     if (g) {
       g.name = name; g.idNum = idNum;
@@ -6341,13 +6386,12 @@ function saveGuest() {
       g.nationality = document.getElementById('g-nationality').value;
       g.dob = document.getElementById('g-dob')?.value || g.dob;
       g.address = document.getElementById('g-address')?.value || g.address;
-      g.company = document.getElementById('g-company')?.value || g.company;
       g.notes = document.getElementById('g-notes')?.value || g.notes;
+      g.members = members;
     }
     window._editingGuestId = null;
     addAuditLog('Misafir Güncelle', name);
   } else {
-    // New guest mode
     const existing = guests.find(g => g.idNum === idNum && idNum);
     if (existing) { showToast('Bu TC/Pasaport numarası zaten kayıtlı!', 'error'); return; }
     guests.push({
@@ -6357,8 +6401,8 @@ function saveGuest() {
       nationality:document.getElementById('g-nationality').value,
       dob:document.getElementById('g-dob')?.value || '',
       address:document.getElementById('g-address')?.value || '',
-      company:document.getElementById('g-company')?.value || '',
       notes:document.getElementById('g-notes')?.value || '',
+      members,
       stays:0, lastStay:'', vip:false, blacklist:false, createdAt:Date.now()
     });
     addAuditLog('Misafir Ekle', name);
@@ -6372,7 +6416,12 @@ function saveGuest() {
 function renderGuestsTable() {
   const search = (document.getElementById('guest-search')?.value || '').toLowerCase();
   const vipFilter = document.getElementById('guest-vip-filter')?.value || '';
-  let data = [...guests].sort((a,b) => (b.createdAt||0) - (a.createdAt||0));
+  let data = [...guests].sort((a,b) => {
+    // Önce createdAt'a göre sırala (en yeni üstte)
+    const aTime = a.createdAt || 0;
+    const bTime = b.createdAt || 0;
+    return bTime - aTime;
+  });
   if (search) data = data.filter(g => g.name.toLowerCase().includes(search) || (g.idNum||'').includes(search) || (g.phone||'').includes(search) || (g.company||'').toLowerCase().includes(search));
   if (vipFilter === 'vip') data = data.filter(g => g.vip);
   if (vipFilter === 'blacklist') data = data.filter(g => g.blacklist);
@@ -6407,10 +6456,17 @@ function editGuest(id) {
   document.getElementById('g-phone').value = g.phone || '';
   document.getElementById('g-email').value = g.email || '';
   document.getElementById('g-nationality').value = g.nationality || '';
-  const compEl = document.getElementById('g-company'); if(compEl) compEl.value = g.company||'';
   const dobEl = document.getElementById('g-dob'); if(dobEl) dobEl.value = g.dob||'';
+  const addrEl = document.getElementById('g-address'); if(addrEl) addrEl.value = g.address||'';
   const noteEl = document.getElementById('g-notes'); if(noteEl) noteEl.value = g.notes||'';
-  // Store editing ID
+
+  // Grup üyelerini yükle
+  const membersList = document.getElementById('g-members-list');
+  if (membersList) {
+    membersList.innerHTML = '';
+    (g.members || []).forEach(m => guestAddMember(m));
+  }
+
   window._editingGuestId = id;
   openModal('modal-guest');
   setTimeout(() => initCountryField('g-nationality', g.nationality || 'TR'), 50);
@@ -6895,15 +6951,19 @@ function _doClearAllData() {
 // =====================
 function updateDate() {
   const d = new Date();
+  // Gösterilecek tarih today() fonksiyonundan al (gün kapanışına bağlı)
+  const todayTarih = today();
+  const [yil, ay, gun] = todayTarih.split('-');
+  const gosterDate = new Date(parseInt(yil), parseInt(ay)-1, parseInt(gun));
   const options = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
-  const tamTarih = d.toLocaleDateString('tr-TR', options);
+  const tamTarih = gosterDate.toLocaleDateString('tr-TR', options);
   document.getElementById('today-date').textContent = tamTarih;
 
   // Dashboard büyük tarih
   const buyukEl = document.getElementById('dash-tarih-buyuk');
   if (buyukEl) buyukEl.textContent = tamTarih;
 
-  // Saat
+  // Saat (gerçek saat)
   const saatEl = document.getElementById('dash-tarih-saat');
   if (saatEl) {
     const ss = String(d.getHours()).padStart(2,'0');
@@ -11875,8 +11935,14 @@ function _doRunNightAudit() {
 
   if (!nightAuditHistory) nightAuditHistory = [];
   nightAuditHistory.unshift(audit);
+  // Gün kapanışı yapıldı — bir sonraki günü aktif tarih olarak kaydet
+  const yarin = new Date();
+  yarin.setDate(yarin.getDate() + 1);
+  const yarinTarih = yarin.toISOString().split('T')[0];
+  try { localStorage.setItem('hms_last_audit_date', yarinTarih); } catch(e) {}
   save();
   renderNightAudit();
+  renderDashboard();
   showToast(`Gece denetimi tamamlandı! Gelir: ${fmtTL(todayIncome)} | Doluluk: %${occupancyRate}`, 'success');
   addAuditLog('Gece Denetimi', `${todayDate} — Gelir: ${fmtTL(todayIncome)}, Doluluk: %${occupancyRate}`);
 
@@ -13254,8 +13320,15 @@ function gkKapat() {
   const kapat = () => {
     const saat = new Date().toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'});
     localStorage.setItem(`gk-kapalis-${aktifTarih}`, saat);
+    // Tarihi bir sonraki güne ilerlet
+    const yarin = new Date(aktifTarih);
+    yarin.setDate(yarin.getDate() + 1);
+    const yarinTarih = yarin.toISOString().split('T')[0];
+    try { localStorage.setItem('hms_last_audit_date', yarinTarih); } catch(e) {}
     gkNotuKaydet(); renderGununKapanis();
-    showToast(`✅ Gün ${saat} itibarıyla kapatıldı!`, 'success');
+    updateDate();
+    renderDashboard();
+    showToast(`✅ Gün ${saat} itibarıyla kapatıldı! Tarih ${yarinTarih.split('-').reverse().join('.')} olarak güncellendi.`, 'success');
   };
   bekleyen.length > 0 ? showConfirm(`${bekleyen.length} C/OUT tamamlanmamış! Yine de kapat?`, kapat) : kapat();
 }
@@ -13928,32 +14001,44 @@ function newResFromGuest(id) {
   const g = guests.find(x => x.id === id);
   if (!g) return;
 
-  // Kara liste kontrolü
   if (g.blacklist) {
     showToast(`⛔ ${g.name} kara listede! Rezervasyon oluşturulamaz.`, 'error');
     return;
   }
 
-  // Rezervasyon formunu aç ve misafir bilgilerini doldur
+  // Rezervasyon formunu aç
   openNewReservation();
   setTimeout(() => {
     const nameEl = document.getElementById('res-guest-name');
     const idEl = document.getElementById('res-guest-id');
     const phoneEl = document.getElementById('res-guest-phone');
     const emailEl = document.getElementById('res-guest-email');
-    const natEl = document.getElementById('res-guest-nationality');
 
     if (nameEl) nameEl.value = g.name || '';
     if (idEl) idEl.value = g.idNum || '';
     if (phoneEl) phoneEl.value = g.phone || '';
     if (emailEl) emailEl.value = g.email || '';
-    if (natEl) natEl.value = g.nationality || '';
 
-    // Uyruk alanını güncelle
-    if (g.nationality) setTimeout(() => initCountryField('res-guest-nationality', g.nationality), 100);
+    if (g.nationality) {
+      const natHidden = document.getElementById('res-guest-nationality');
+      if (natHidden) natHidden.value = g.nationality;
+      setTimeout(() => initCountryField('res-guest-nationality', g.nationality), 100);
+    }
 
+    // Grup üyesi sayısını da ayarla
+    if (g.members && g.members.length > 0) {
+      const paxEl = document.getElementById('res-pax');
+      if (paxEl) paxEl.value = g.members.length + 1;
+      // guestList olarak sakla — C/IN formunda kullanılacak
+      window._pendingGuestList = [
+        { name: g.name, idNum: g.idNum, dob: g.dob||'', nationality: g.nationality||'', address: g.address||'' },
+        ...g.members
+      ];
+    }
+
+    if (g.vip) showToast(`⭐ ${g.name} VIP misafir!`, 'warning');
     showToast(`${g.name} bilgileri forma yüklendi!`, 'success');
-  }, 300);
+  }, 400);
 }
 
 function revertCancellation(id) {
@@ -13967,6 +14052,27 @@ function revertCancellation(id) {
   renderReservationsTable();
   renderRooms();
   showToast(`${r.guestName} rezervasyonu geri alındı! ✅`, 'success');
+}
+
+// ─── GUEST GRUP ÜYELERİ ──────────────────────────────────────────────────
+function guestAddMember(member) {
+  const list = document.getElementById('g-members-list');
+  if (!list) return;
+  const idx = list.children.length;
+  const div = document.createElement('div');
+  div.style.cssText = 'background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;';
+  div.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <span style="font-size:12px;font-weight:700;color:var(--text2);">👤 ${idx+1}. Üye</span>
+      <button onclick="this.closest('div').parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:16px;">×</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <input class="gm-name" placeholder="Ad Soyad *" value="${member?.name||''}" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
+      <input class="gm-id" placeholder="TC / Pasaport *" value="${member?.idNum||''}" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
+      <input class="gm-dob" type="date" value="${member?.dob||''}" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
+      <input class="gm-nat" placeholder="Uyruk (TR, RU vb.)" value="${member?.nationality||''}" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
+    </div>`;
+  list.appendChild(div);
 }
 
 // saveUserWithHash kaldırıldı
