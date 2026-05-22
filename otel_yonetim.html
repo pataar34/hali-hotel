@@ -1178,6 +1178,7 @@
           <div class="quick-action" onclick="showPage('folio')"><div class="qa-icon">💳</div><div class="qa-text">Hesap Görüntüle</div></div>
           <div class="quick-action" onclick="showPage('maintenance')"><div class="qa-icon">🔧</div><div class="qa-text">Arıza Bildir</div></div>
           <div class="quick-action" onclick="showPage('statistics')"><div class="qa-icon">📊</div><div class="qa-text">İstatistikler</div></div>
+          <div class="quick-action" onclick="showPage('res-forecast')"><div class="qa-icon">📈</div><div class="qa-text">Rez. Forecast</div></div>
         </div>
         <div class="cards-row">
           <div class="card">
@@ -1792,7 +1793,13 @@
             </div>
           </div>
           <div class="tab-content" id="tab-inhouse">
-            <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <label style="font-size:12px;color:var(--text3);font-weight:600;">TARİH</label>
+                <input type="date" id="inhouse-tarih-filter" onchange="renderCheckin()"
+                  style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text);font-size:13px;font-family:inherit;">
+                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('inhouse-tarih-filter').value=today();renderCheckin();">Bugün</button>
+              </div>
               <button class="btn btn-success" onclick="openWalkinModal()">🚶 Walk-in Check-in</button>
             </div>
             <div class="table-container">
@@ -1946,6 +1953,73 @@
       </div>
 
       <!-- ===== STATISTICS ===== -->
+      <!-- ===== REZERVASYON FORECAST ===== -->
+      <div class="page" id="page-res-forecast">
+        <div class="section-header">
+          <div class="section-title">📈 Rezervasyon Forecast</div>
+          <button class="btn btn-secondary btn-sm" onclick="resForecastYazdir()">🖨️ Yazdır</button>
+        </div>
+
+        <!-- Görünüm & Tarih Filtresi -->
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:20px;background:var(--surface2);padding:14px 16px;border-radius:var(--radius);border:1px solid var(--border);">
+          <select id="rf-view" onchange="renderResForecast()" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
+            <option value="gunluk">📅 Günlük</option>
+            <option value="aylik">📆 Aylık</option>
+            <option value="yillik">🗓 Yıllık</option>
+          </select>
+
+          <!-- Günlük tarih aralığı -->
+          <div id="rf-gunluk-wrap" style="display:flex;gap:8px;align-items:center;">
+            <input type="date" id="rf-bas" onchange="renderResForecast()"
+              style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;">
+            <span style="color:var(--text3);">—</span>
+            <input type="date" id="rf-bit" onchange="renderResForecast()"
+              style="padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;font-family:inherit;">
+            <button class="btn btn-secondary btn-sm" onclick="
+              const t=today();
+              document.getElementById('rf-bas').value=t;
+              document.getElementById('rf-bit').value=t;
+              renderResForecast();">Bugün</button>
+            <button class="btn btn-secondary btn-sm" onclick="
+              const mn=new Date(today()); mn.setDate(1);
+              const mx=new Date(mn.getFullYear(),mn.getMonth()+1,0);
+              document.getElementById('rf-bas').value=mn.toISOString().split('T')[0];
+              document.getElementById('rf-bit').value=mx.toISOString().split('T')[0];
+              renderResForecast();">Bu Ay</button>
+          </div>
+
+          <!-- Aylık seçici -->
+          <div id="rf-aylik-wrap" style="display:none;gap:8px;align-items:center;">
+            <select id="rf-ay" onchange="renderResForecast()" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
+              <option value="1">Ocak</option><option value="2">Şubat</option><option value="3">Mart</option>
+              <option value="4">Nisan</option><option value="5">Mayıs</option><option value="6">Haziran</option>
+              <option value="7">Temmuz</option><option value="8">Ağustos</option><option value="9">Eylül</option>
+              <option value="10">Ekim</option><option value="11">Kasım</option><option value="12">Aralık</option>
+            </select>
+            <select id="rf-yil-ay" onchange="renderResForecast()" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
+              <option value="2024">2024</option><option value="2025">2025</option>
+              <option value="2026" selected>2026</option><option value="2027">2027</option>
+            </select>
+          </div>
+
+          <!-- Yıllık seçici -->
+          <div id="rf-yillik-wrap" style="display:none;gap:8px;align-items:center;">
+            <select id="rf-yil" onchange="renderResForecast()" style="padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
+              <option value="2024">2024</option><option value="2025">2025</option>
+              <option value="2026" selected>2026</option><option value="2027">2027</option>
+            </select>
+          </div>
+
+          <button class="btn btn-primary btn-sm" onclick="renderResForecast()">🔍 Göster</button>
+        </div>
+
+        <!-- Özet Kartlar -->
+        <div id="rf-ozet" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px;"></div>
+
+        <!-- Tablo -->
+        <div id="rf-tablo"></div>
+      </div>
+
       <div class="page" id="page-statistics">
         <div class="section-header">
           <div class="section-title">İstatistikler</div>
@@ -4404,7 +4478,20 @@ function showPage(id) {
   if (id === 'reservations') renderReservationsTable();
   if (id === 'blacklist') { renderBlacklist(); }
   if (id === 'room-change') { rcSelectedResId = null; renderRoomChange(); }
-  if (id === 'checkin') { renderCheckin(); }
+  if (id === 'res-forecast') {
+    const bas = document.getElementById('rf-bas');
+    const bit = document.getElementById('rf-bit');
+    if (bas && !bas.value) bas.value = today();
+    if (bit && !bit.value) bit.value = today();
+    const rfAy = document.getElementById('rf-ay');
+    if (rfAy && !rfAy.dataset.set) { rfAy.value = new Date().getMonth()+1; rfAy.dataset.set='1'; }
+    renderResForecast();
+  }
+  if (id === 'checkin') {
+    const inhouseTarihEl = document.getElementById('inhouse-tarih-filter');
+    if (inhouseTarihEl && !inhouseTarihEl.value) inhouseTarihEl.value = today();
+    renderCheckin();
+  }
   if (id === 'oda-dagilim') {
     const t = today();
     const bas = document.getElementById('od-bas');
@@ -4767,7 +4854,7 @@ function renderRooms() {
             (res.status === 'checkedin' || res.status === 'confirmed') &&
             res.checkin <= seciliTarih && res.checkout > seciliTarih
           );
-          const guestName = aktifMisafir?.guestName || (viewMode === 'internal' ? st.guestName : '') || '';
+          const guestName = aktifMisafir?.guestName || '';
           const guestInfo = guestName ? `<div style="font-size:13px;color:#000;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px;opacity:0.85;font-weight:600;">${guestName.split(' ')[0]}</div>` : '';
           return `<div onclick="showRoomQuickView('${r.num}')" title="${r.num} — ${statusLabel[status]||status}${st.guestName?' ('+st.guestName+')':''}"
             style="position:relative;width:128px;height:104px;background:${bgColor};border:2px solid ${borderColor};border-radius:8px;cursor:pointer;
@@ -5805,10 +5892,12 @@ function renderCheckin() {
         </tr>`;
       }).join('');
   }
-  // In-house
+  // In-house — tarih filtresine göre
+  const inhouseTarih = document.getElementById('inhouse-tarih-filter')?.value || today();
   const inhouse = visibleReservations().filter(r => 
-    (r.status === 'checkedin') ||
-    (r.status === 'confirmed' && r.checkin <= todayStr && r.checkout > todayStr)
+    r.status !== 'cancelled' && r.status !== 'noshow' && r.status !== 'checkedout' &&
+    (r.status === 'checkedin' || r.status === 'confirmed') &&
+    r.checkin <= inhouseTarih && r.checkout > inhouseTarih
   );
   const itbody = document.getElementById('inhouse-tbody');
   if (itbody) {
@@ -10296,7 +10385,7 @@ const COUNTRIES = [
   {code:'YE',name:'Yemen'},  {code:'NC',name:'Yeni Kaledonya'},  {code:'NZ',name:'Yeni Zelanda'},  {code:'GR',name:'Yunanistan'},
   {code:'ZM',name:'Zambiya'},  {code:'ZW',name:'Zimbabve'},  {code:'AX',name:'Åland Adaları'},  {code:'TD',name:'Çad'},
   {code:'CZ',name:'Çek Cumhuriyeti'},  {code:'CN',name:'Çin'},  {code:'UZ',name:'Özbekistan'},  {code:'JO',name:'Ürdün'},
-  {code:'GB',name:'İngiltere'},  {code:'IR',name:'İran'},  {code:'IE',name:'İrlanda'},  {code:'ES',name:'İspanya'},
+  {code:'GB',name:'İngiltere (UK)'},  {code:'IR',name:'İran'},  {code:'IE',name:'İrlanda'},  {code:'ES',name:'İspanya'},
   {code:'IL',name:'İsrail'},  {code:'SE',name:'İsveç'},  {code:'CH',name:'İsviçre'},  {code:'IT',name:'İtalya'},
   {code:'IS',name:'İzlanda'},  {code:'CL',name:'Şili'}
 ];
@@ -10339,7 +10428,7 @@ function buildCountrySelect(targetId, selectedCode='TR') {
   if (initCountry) searchInput.value = initCountry.name;
   
   function filterCountries(q) {
-    const list = q ? COUNTRIES.filter(c => c.name.toLowerCase().includes(q.toLowerCase())) : COUNTRIES;
+    const list = q ? COUNTRIES.filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || c.code.toLowerCase().includes(q.toLowerCase())) : COUNTRIES;
     dropdown.innerHTML = list.slice(0, 60).map(c => 
       `<div class="country-option" data-code="${c.code}" data-name="${c.name}" style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);">${c.name}</div>`
     ).join('');
@@ -10376,7 +10465,7 @@ function showCountryDD(fieldId) {
 function filterCountryDD(fieldId, q) {
   const dd = document.getElementById(fieldId+'-dd');
   if (!dd) return;
-  const list = q ? COUNTRIES.filter(c => c.name.toLowerCase().includes(q.toLowerCase())) : COUNTRIES;
+  const list = q ? COUNTRIES.filter(c => c.name.toLowerCase().includes(q.toLowerCase()) || c.code.toLowerCase().includes(q.toLowerCase())) : COUNTRIES;
   dd.innerHTML = list.slice(0, 80).map(c =>
     `<div onclick="selectCountry('${fieldId}','${c.code}','${c.name.replace(/'/g,"\'")}')" style="padding:7px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background=''">${c.name}</div>`
   ).join('') || '<div style="padding:10px 12px;color:var(--text3);font-size:12px;">Sonuç bulunamadı</div>';
@@ -14073,6 +14162,167 @@ function guestAddMember(member) {
       <input class="gm-nat" placeholder="Uyruk (TR, RU vb.)" value="${member?.nationality||''}" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font-size:13px;">
     </div>`;
   list.appendChild(div);
+}
+
+// ─── REZERVASYON FORECAST ────────────────────────────────────────────────
+function renderResForecast() {
+  const view = document.getElementById('rf-view')?.value || 'gunluk';
+
+  // Wrap göster/gizle
+  document.getElementById('rf-gunluk-wrap').style.display = view === 'gunluk' ? 'flex' : 'none';
+  document.getElementById('rf-aylik-wrap').style.display = view === 'aylik' ? 'flex' : 'none';
+  document.getElementById('rf-yillik-wrap').style.display = view === 'yillik' ? 'flex' : 'none';
+
+  const AYLAR = ['','Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+
+  let satirlar = [];
+  let baslik = '';
+
+  if (view === 'gunluk') {
+    const bas = document.getElementById('rf-bas')?.value || today();
+    const bit = document.getElementById('rf-bit')?.value || today();
+    baslik = `${fmt(bas)} — ${fmt(bit)}`;
+
+    let cur = new Date(bas);
+    const bitDate = new Date(bit);
+    while (cur <= bitDate) {
+      const g = cur.toISOString().split('T')[0];
+      const allRes = visibleReservations().filter(r => r.status !== 'cancelled' && r.status !== 'noshow');
+      const girisInt = allRes.filter(r => r.checkin === g && r.visibility !== 'public').length;
+      const girisPub = allRes.filter(r => r.checkin === g && r.visibility === 'public').length;
+      const cikis = allRes.filter(r => r.checkout === g).length;
+      const konInt = allRes.filter(r => r.checkin <= g && r.checkout > g && r.visibility !== 'public').length;
+      const konPub = allRes.filter(r => r.checkin <= g && r.checkout > g && r.visibility === 'public').length;
+      const iptal = visibleReservations().filter(r => r.checkin === g && r.status === 'cancelled').length;
+      const icerde = konInt + konPub;
+      const yuzde = Math.round(icerde / ROOMS_DATA.length * 100);
+      satirlar.push({ label: fmt(g), girisInt, girisPub, cikis, konInt, konPub, iptal, icerde, yuzde });
+      cur.setDate(cur.getDate() + 1);
+    }
+
+  } else if (view === 'aylik') {
+    const ay = parseInt(document.getElementById('rf-ay')?.value || new Date().getMonth()+1);
+    const yil = parseInt(document.getElementById('rf-yil-ay')?.value || new Date().getFullYear());
+    baslik = `${AYLAR[ay]} ${yil}`;
+
+    const gunSayisi = new Date(yil, ay, 0).getDate();
+    for (let g = 1; g <= gunSayisi; g++) {
+      const tarih = `${yil}-${String(ay).padStart(2,'0')}-${String(g).padStart(2,'0')}`;
+      const allRes = visibleReservations().filter(r => r.status !== 'cancelled' && r.status !== 'noshow');
+      const girisInt = allRes.filter(r => r.checkin === tarih && r.visibility !== 'public').length;
+      const girisPub = allRes.filter(r => r.checkin === tarih && r.visibility === 'public').length;
+      const cikis = allRes.filter(r => r.checkout === tarih).length;
+      const konInt = allRes.filter(r => r.checkin <= tarih && r.checkout > tarih && r.visibility !== 'public').length;
+      const konPub = allRes.filter(r => r.checkin <= tarih && r.checkout > tarih && r.visibility === 'public').length;
+      const iptal = visibleReservations().filter(r => r.checkin === tarih && r.status === 'cancelled').length;
+      const icerde = konInt + konPub;
+      const yuzde = Math.round(icerde / ROOMS_DATA.length * 100);
+      satirlar.push({ label: `${g} ${AYLAR[ay]}`, girisInt, girisPub, cikis, konInt, konPub, iptal, icerde, yuzde });
+    }
+
+  } else if (view === 'yillik') {
+    const yil = parseInt(document.getElementById('rf-yil')?.value || new Date().getFullYear());
+    baslik = `${yil} Yılı`;
+
+    for (let ay = 1; ay <= 12; ay++) {
+      const prefix = `${yil}-${String(ay).padStart(2,'0')}`;
+      const ortaTarih = `${prefix}-15`;
+      const allRes = visibleReservations().filter(r => r.status !== 'cancelled' && r.status !== 'noshow');
+      const girisInt = allRes.filter(r => r.checkin?.startsWith(prefix) && r.visibility !== 'public').length;
+      const girisPub = allRes.filter(r => r.checkin?.startsWith(prefix) && r.visibility === 'public').length;
+      const cikis = allRes.filter(r => r.checkout?.startsWith(prefix)).length;
+      const konInt = allRes.filter(r => r.checkin <= ortaTarih && r.checkout > ortaTarih && r.visibility !== 'public').length;
+      const konPub = allRes.filter(r => r.checkin <= ortaTarih && r.checkout > ortaTarih && r.visibility === 'public').length;
+      const iptal = visibleReservations().filter(r => r.checkin?.startsWith(prefix) && r.status === 'cancelled').length;
+      const icerde = konInt + konPub;
+      const yuzde = Math.round(icerde / ROOMS_DATA.length * 100);
+      satirlar.push({ label: AYLAR[ay], girisInt, girisPub, cikis, konInt, konPub, iptal, icerde, yuzde });
+    }
+  }
+
+  const topGirisInt = satirlar.reduce((s,r) => s+(r.girisInt||0), 0);
+  const topGirisPub = satirlar.reduce((s,r) => s+(r.girisPub||0), 0);
+  const topCikis = satirlar.reduce((s,r) => s+(r.cikis||0), 0);
+  const topIptal = satirlar.reduce((s,r) => s+(r.iptal||0), 0);
+  const maxIcerde = Math.max(...satirlar.map(r => (r.konInt||0)+(r.konPub||0)), 0);
+
+  document.getElementById('rf-ozet').innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--green);border-radius:var(--radius);padding:14px;">
+      <div style="font-size:12px;color:var(--text3);">📋 Toplam Rezervasyon</div>
+      <div style="font-size:28px;font-weight:700;color:var(--green);">${topGirisInt+topGirisPub}</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--red);border-radius:var(--radius);padding:14px;">
+      <div style="font-size:12px;color:var(--text3);">⬆ Toplam C/OUT</div>
+      <div style="font-size:28px;font-weight:700;color:var(--red);">${topCikis}</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--gold);border-radius:var(--radius);padding:14px;">
+      <div style="font-size:12px;color:var(--text3);">🏨 Max Konaklayan</div>
+      <div style="font-size:28px;font-weight:700;color:var(--gold);">${maxIcerde}</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-left:4px solid var(--orange);border-radius:var(--radius);padding:14px;">
+      <div style="font-size:12px;color:var(--text3);">✕ Toplam İptal</div>
+      <div style="font-size:28px;font-weight:700;color:var(--orange);">${topIptal}</div>
+    </div>`;
+
+  // Tablo
+  const thS = 'border:1px solid var(--border);padding:8px 12px;text-align:center;font-size:12px;font-weight:700;background:var(--surface2);color:var(--text3);';
+  const tdS = 'border:1px solid var(--border);padding:7px 10px;text-align:center;font-size:13px;';
+  const lblS = 'border:1px solid var(--border);padding:7px 14px;font-size:13px;font-weight:600;color:var(--text2);';
+
+  const topGiris = satirlar.reduce((s,r) => s+(r.girisInt||0)+(r.girisPub||0), 0);
+  const rows = satirlar.map(s => {
+    const giris = (s.girisInt||0)+(s.girisPub||0);
+    const konaklayan = (s.konInt||0)+(s.konPub||0);
+    return `<tr>
+    <td style="${lblS}">${s.label}</td>
+    <td style="${tdS}color:var(--green);font-weight:${giris>0?'700':'400'};">${giris||'—'}</td>
+    <td style="${tdS}color:var(--red);font-weight:${(s.cikis||0)>0?'700':'400'};">${s.cikis||'—'}</td>
+    <td style="${tdS}color:var(--gold);font-weight:${konaklayan>0?'700':'400'};">${konaklayan||'—'}</td>
+    <td style="${tdS}color:var(--orange);">${s.iptal||'—'}</td>
+    <td style="${tdS}">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="flex:1;height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;">
+          <div style="height:100%;width:${s.yuzde||0}%;background:${(s.yuzde||0)>=80?'var(--red)':(s.yuzde||0)>=50?'var(--gold)':'var(--green)'};border-radius:4px;"></div>
+        </div>
+        <span style="font-size:12px;font-weight:700;color:${(s.yuzde||0)>=80?'var(--red)':(s.yuzde||0)>=50?'var(--gold)':'var(--green)'};">%${s.yuzde||0}</span>
+      </div>
+    </td>
+  </tr>`;}).join('');
+
+  document.getElementById('rf-tablo').innerHTML = `
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr>
+          <th style="${thS}text-align:left;min-width:120px;">${baslik}</th>
+          <th style="${thS}">📋 REZERVASYON</th>
+          <th style="${thS}">⬆ C/OUT</th>
+          <th style="${thS}">🏨 KONAKLAYAN</th>
+          <th style="${thS}">✕ İPTAL</th>
+          <th style="${thS}min-width:150px;">📊 DOLULUK %</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr>
+          <td style="${lblS}background:var(--surface3);font-weight:700;color:var(--gold);">TOPLAM</td>
+          <td style="${tdS}background:var(--surface3);color:var(--green);font-weight:700;">${topGiris}</td>
+          <td style="${tdS}background:var(--surface3);color:var(--red);font-weight:700;">${topCikis}</td>
+          <td style="${tdS}background:var(--surface3);color:var(--gold);font-weight:700;">${maxIcerde}</td>
+          <td style="${tdS}background:var(--surface3);color:var(--orange);font-weight:700;">${topIptal}</td>
+          <td style="${tdS}background:var(--surface3);color:var(--gold);font-weight:700;">%${Math.round(maxIcerde/ROOMS_DATA.length*100)}</td>
+        </tr></tfoot>
+      </table>
+    </div>`;
+}
+
+function resForecastYazdir() {
+  const sty = document.createElement('style');
+  sty.textContent = `@media print{*{color:#000!important;background:transparent!important}body>*:not(#rf-print){display:none!important}#rf-print{display:block!important;padding:8mm}table{width:100%;border-collapse:collapse;font-size:9pt}td,th{border:1px solid #000;padding:4px 6px}@page{size:A4;margin:8mm}}`;
+  const wrap = document.createElement('div');
+  wrap.id = 'rf-print'; wrap.style.display = 'none';
+  wrap.innerHTML = `<div style="text-align:center;margin-bottom:8mm;"><div style="font-size:14pt;font-weight:700;">HALI HOTEL — REZERVASYON FORECAST</div></div>
+    ${document.getElementById('rf-tablo')?.innerHTML||''}`;
+  document.body.appendChild(wrap); document.head.appendChild(sty);
+  window.print();
+  document.body.removeChild(wrap); document.head.removeChild(sty);
 }
 
 // saveUserWithHash kaldırıldı
